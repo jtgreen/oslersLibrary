@@ -1,0 +1,14 @@
+    {% for hit in hits %}
+
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title"><a href="{% url 'query:display' hit.pageId %}">{{ hit.source.title }}</a></h3>
+            </div>
+            <div class="panel-body">
+                {% for elem in hit.highlight.pageContent %}
+                    <p>... {{ elem|safe }} ...</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    {% endfor %}    
