@@ -23,8 +23,12 @@ $(document).ready(function(){
             
             $('.jqPagination').jqPagination({
                 paged: function(page) {
-
-                    var posting = $.post( "/query/page/"+ page + "/" );
+                    
+                    // Because this is dynamically generated in the search page, e.g.,
+                    // depending on how this app was deployed, it could have a different root,
+                    // for example: oslersLibrary/query/page... so, read it from the search box's
+                    // action 
+                    var posting = $.post( $("#searchForm").attr("action") + "page/" + page + "/" );
                     // Put the results in a div
                     posting.done(function( data ) {
                         $( "#queryResults" ).empty().append( data );

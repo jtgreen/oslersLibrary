@@ -31,7 +31,7 @@
                             <input type="hidden" name="formName" value="searchForm" />
 
                             <div class="input-group">
-                                <input name="searchTerms" type="text" class="form-control" placeholder="Search Terms" aria-describedby="basic-addon1">
+                                <input name="searchTerms" type="text" class="form-control" placeholder="{{ currentQuery|escape }}" aria-describedby="basic-addon1">
                                 <span class="input-group-btn">
                                     <button id="searchButton" class="btn btn-default" type="button">
                                         <span class="glyphicon glyphicon-search" aria-hidden="true"></span>

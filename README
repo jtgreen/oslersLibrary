@@ -1,0 +1,2 @@
+NOTE: Coped query/static to root static's appropriate folder to simplify serving the static files in production. So
+if you edit any of these, copy them over or serve static a different way and clean that folder of these files (those copied)

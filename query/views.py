@@ -30,7 +30,7 @@ def index(request):
 					}
 				}
 			}
-			
+
 			hits = es.search(index="library", body=query)
 			
 			# Calculate the number of pages necessary to display the results
@@ -55,11 +55,53 @@ def index(request):
 					processedHits.append({ 'pageId':hit["_id"], 'source':hit["_source"] })
 					
 			# Set the query as the currentQuery for retrieval by pagination 
-			request.session['currentQuery'] = query
+			request.session['currentQuery'] = request.POST['searchTerms']
 			
-			return render(request, 'query.html', {'username':request.user, 'hits':processedHits, 'numPages':numPages })
+			return render(request, 'query.html', {'username':request.user, 'hits':processedHits, 'numPages':numPages,  'currentQuery': request.POST['searchTerms'] })
+	
+	if request.session.has_key('currentQuery'):
+		query = {
+			'query': {
+				"query_string" : {
+					"query": request.session["currentQuery"],
+				}
+			},
+			"highlight": {
+				"preTags" : ["<strong>"],
+				"postTags" : ["</strong>"],
+				"fields" : {
+					"order": "score",
+					"pageContent" : {"fragment_size" : "250", "number_of_fragments" : "3"},
+				}
+			}
+		}
 		
-	return render(request, 'query.html', { 'username':request.user })
+		hits = es.search(index="library", body=query)
+		
+		# Calculate the number of pages necessary to display the results
+		# Python 2.7 compat
+		numPages = int(hits['hits']['total'])/HITS_PER_PAGE
+		
+		try:
+			if HITS_PER_PAGE/ (int(hits['hits']['total'])-(numPages * HITS_PER_PAGE)) > 0:
+				numPages += 1
+		except ZeroDivisionError:
+			pass
+		
+		# pre-process hit list, as _source is a no go for django's templating system
+		processedHits = []
+		import pprint
+		for hit in hits["hits"]["hits"]:
+			
+			# Im not sure why we're getting some queries without a highlight
+			try:
+				processedHits.append({ 'pageId':hit["_id"], 'source':hit["_source"], 'highlight':hit["highlight"] })
+			except KeyError:
+				processedHits.append({ 'pageId':hit["_id"], 'source':hit["_source"] })
+		
+		return render(request, 'query.html', {'username':request.user, 'hits':processedHits, 'numPages':numPages, 'currentQuery':request.session["currentQuery"] })
+
+	return render(request, 'query.html', { 'username':request.user, 'currentQuery':"Search Terms" })
 
 @login_required
 def display(request, pageId):
@@ -88,7 +130,7 @@ def display(request, pageId):
 															}
 														})
 	else:
-		previousPage = "#"
+		previousPage = {"hits": {"hits": [{"_id":"#"}]}}			# Basically, set what would have been the object structure up so that the return isnt malformed
 	
 	nextPage = es.search(index="library", body={
 												"query" : {
@@ -109,7 +151,7 @@ def display(request, pageId):
 													}
 												})
 	if nextPage["hits"]["total"] == 0:
-		nextPage = "#"
+		nextPage = {"hits": {"hits": [{"_id":"#"}]}}			# Basically, set what would have been the object structure up so that the return isnt malformed
 	
 	return render(request, 'display.html', { 'username':request.user, 'previousPage':previousPage['hits']['hits'][0]['_id'], 'nextPage':nextPage['hits']['hits'][0]['_id'], 'pageContent':page['_source']['pageContent'], 'pageLocation':os.path.join( str(page["_source"]["location"]), "pages/document-page-"+str(page["_source"]["pageNumber"])+".png")  })
 
